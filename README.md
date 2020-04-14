@@ -1,0 +1,2 @@
+# amos
+discord bot
