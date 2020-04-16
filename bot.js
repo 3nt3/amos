@@ -4,10 +4,14 @@ const dotenv = require('dotenv');
 const chalk = require('chalk');
 const fs = require('fs');
 const moment = require('moment');
+const archiver = require('archiver');
 
 // Prefix and Bot ID
 const prefix = '!';
 const BOT_ID = 649278224106389547n;
+
+// 
+const archive = archiver('zip');
 
 // Chalk Config
 const log = console.log;
@@ -25,7 +29,9 @@ client.once('ready', () => log(s('Bot running')));
 client.login(process.env.TOKEN);
 
 client.on('message', (msg) => {
+  if (msg.author.bot) return;
   saveToLog(msg);
+  checkBlacklist(msg);
 
   if (msg.content.startsWith(`${prefix}kick`)) {
     kickUser(msg);
@@ -36,6 +42,7 @@ client.on('message', (msg) => {
   }
 });
 
+// Commands
 const kickUser = (msg) => {
   let userToKick = msg.mentions.members.first();
   try {
@@ -103,13 +110,31 @@ const saveToLog = (msg) => {
 }
 
 const getLog = (msg) => {
+
   try {
     if (msg.member.hasPermission("ADMINISTRATOR")) {
-      return msg.author.send("Here is your log file :wave:", { files: [`./logs/${msg.guild.id}.log`] });
+      createArchive(msg);
+      return msg.author.send("Here is your log file :wave:", {
+        files: [
+          `./logs/${msg.guild.id}.zip`
+        ]
+      });
     } else {
       return msg.channel.send("You aint be a admin.");
     }
   } catch {
     return msg.channel.send("You aint have the permissionzZz.");
   }
+}
+
+const createArchive = (msg) => {
+  let output = fs.createReadStream(`./logs/${msg.guild.id}.log`);
+  let archive = archiver('zip', { zlib: 9});
+  let file = `./logs/${msg.guild.id}.log`;
+  
+}
+
+
+const checkBlacklist = (msg) => {
+    
 }
