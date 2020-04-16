@@ -128,9 +128,23 @@ const getLog = (msg) => {
 }
 
 const createArchive = (msg) => {
-  let output = fs.createReadStream(`./logs/${msg.guild.id}.log`);
-  let archive = archiver('zip', { zlib: 9});
-  let file = `./logs/${msg.guild.id}.log`;
+  var output = fs.createReadStream(`./logs/${msg.guild.id}.log`);
+  var archive = archiver('zip', { zlib: 9});
+  var file = `./logs/${msg.guild.id}.log`;
+
+  output.on('close', () => {
+    log(archive.pointer() + `bytez`);
+  });
+
+  output.on('end', () => {
+    log('skurr');
+  })
+
+  archive.on('error', (err) => {
+    throw err;
+  });
+
+  archive.pipe()
   
 }
 
