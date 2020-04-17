@@ -1,2 +1,2 @@
 # amos
-discord bot
+a discord bot written in javascript
