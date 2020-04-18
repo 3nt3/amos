@@ -4,14 +4,11 @@ const dotenv = require('dotenv');
 const chalk = require('chalk');
 const fs = require('fs');
 const moment = require('moment');
-const archiver = require('archiver');
+
 
 // Prefix and Bot ID
 const prefix = '!';
 const BOT_ID = 649278224106389547n;
-
-// 
-const archive = archiver('zip');
 
 // Chalk Config
 const log = console.log;
@@ -29,16 +26,27 @@ client.once('ready', () => log(s('Bot running')));
 client.login(process.env.TOKEN);
 
 client.on('message', (msg) => {
+  log(msg.content.toLowerCase());
   if (msg.author.bot) return;
   saveToLog(msg);
   checkBlacklist(msg);
 
-  if (msg.content.startsWith(`${prefix}kick`)) {
-    kickUser(msg);
-  } else if (msg.content.startsWith(`${prefix}ban`)) {
-    banUser(msg);
-  } else if (msg.content.startsWith(`${prefix}getLog`)) {
-    getLog(msg);
+  if (msg.content.startsWith(`${prefix}`)) {
+    if (msg.content.startsWith(`${prefix}kick`)) {
+      kickUser(msg);
+    } else if (msg.content.startsWith(`${prefix}ban`)) {
+      banUser(msg);
+    } else if (msg.content.startsWith(`${prefix}getLog`)) {
+      getLog(msg);
+    } else if (msg.content.startsWith(`${prefix}clearLog`)) {
+      clearLog(msg);
+    } else if (msg.content.startsWith(`${prefix}delete`)) {
+      delete(msg);
+    } else {
+      msg.reply('invalid command')
+        .then(msg => msg.delete({ timeout: 10000 }))
+        .catch(log(e('could not delete msg')));
+    }
   }
 });
 
@@ -54,7 +62,7 @@ const kickUser = (msg) => {
         `OMG u be so funny :joy::joy::joy::joy::joy::joy:`
       );
     }
-    if (msg.member.hasPermission('KICK_MEMBERS')) {
+    if (msg.member.hasPermission('KICK_MEMBERS') && !userToKick.hasPermission('ADMINISTRATOR')) {
       userToKick
         .kick()
         .then(
@@ -80,7 +88,7 @@ const banUser = async (msg) => {
       return msg.channel.send(
         `OMG u be so funny :joy::joy::joy::joy::joy::joy::cross:`
       );
-    } else if (msg.member.hasPermission('BAN_MEMBERS')) {
+    } else if (msg.member.hasPermission('BAN_MEMBERS') && !userToBan.hasPermission(['BAN_MEMBERS', 'ADMINISTRATOR'])) {
       userToBan
         .ban()
         .then(
@@ -110,13 +118,12 @@ const saveToLog = (msg) => {
 }
 
 const getLog = (msg) => {
-
   try {
     if (msg.member.hasPermission("ADMINISTRATOR")) {
       createArchive(msg);
-      return msg.author.send("Here is your log file :wave:", {
+      return msg.author.send("Here is your log file :ocean:", {
         files: [
-          `./logs/${msg.guild.id}.zip`
+          `./logs/${msg.guild.id}.log`
         ]
       });
     } else {
@@ -127,28 +134,41 @@ const getLog = (msg) => {
   }
 }
 
-const createArchive = (msg) => {
-  var output = fs.createReadStream(`./logs/${msg.guild.id}.log`);
-  var archive = archiver('zip', { zlib: 9});
-  var file = `./logs/${msg.guild.id}.log`;
+const convertJSONtoArray = (path) => {
+  let json = require(path);
+  let result = [];
+  let keys = Object.keys(json);
 
-  output.on('close', () => {
-    log(archive.pointer() + `bytez`);
-  });
-
-  output.on('end', () => {
-    log('skurr');
+  keys.forEach((key) => {
+    result.push(json[key]);
   })
 
-  archive.on('error', (err) => {
-    throw err;
-  });
-
-  archive.pipe()
-  
+  return result;
 }
-
 
 const checkBlacklist = (msg) => {
-    
+  const blacklist = convertJSONtoArray('./blacklist.json');
+  for (let i = 0; i < blacklist.length; i++) {
+    let contentLower = msg.content.toLowerCase();
+    if (contentLower.includes(blacklist[i])) {
+      return msg.channel.send('moin', { files: ['important/goethe.mp3'] });
+    }
+  }
 }
+
+const clearLog = (msg) => {
+  const fileToClear = `./logs/${msg.guild.id}.log`;
+  if (msg.member.hasPermission('ADMINISTRATOR')) {
+    fs.truncate(fileToClear, 0, () => log(s(`file ${msg.guild.id} cleared`)));
+    msg.channel.send('Server log cleard! :cross:');
+  } else {
+    return msg.channel.send('You do not have the permission to clear the log file! :sad:')
+  }
+}
+
+const delete = async (msg, range) => {
+    msg.delete();
+    do {
+    const fetched = await msg.channel.fetchMessages({limit: range});
+    msg.channel.bulkDelete(fetched);
+} while(fetched.size >= 2) }
