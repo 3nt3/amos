@@ -63,6 +63,15 @@ client.on('message', (msg) => {
   }
 });
 
+client.on('guildMemberAdd', member => {
+  const channel = member.guild.channels.find(channel => channel.name === "neuankömmlinge");
+  if (!channel) {
+    return;
+  }
+
+  channel.send(`Welcome, ${member} :smile:.`);
+})
+
 // Commands
 // BAN AND KICK
 const kickUser = (msg) => {
@@ -267,7 +276,10 @@ const stopSong = (msg) => {
 }
 
 const help = (msg) => {
-  return msg.channel.send('Here are all commands: \n ```!kick @name```kicks a user from the server **requires permissions** \n```!ban @name```bans a user from the server **requires permissions** \n```!getLog```get the log file **admin only**\n```!clearLog```clears the log file **admin only**\n```!delete [amount]```deletes [amount] messages (min: 1; max: 100; messages being older than 2 weeks will not be deleted)\n```!play [url]``` plays a song in the voice chat **BETA** \n```!stop```stops the current song \n```!code```Link to the git-repository \n```!help```lists all commands');
+  fs.readFile('help.txt', 'utf8', (err, data) => {
+    if (err) throw err;
+    msg.channel.send(data);
+  })
 }
 
 const code = (msg) => {

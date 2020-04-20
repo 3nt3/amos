@@ -15,4 +15,3 @@
 
 # Other features
 * Blacklist; see blacklist.json
-* 
