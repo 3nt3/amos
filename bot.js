@@ -46,6 +46,10 @@ client.on('message', (msg) => {
     } // music
     else if (msg.content.startsWith(`${prefix}play`)) {
       play(msg);
+    } else if (msg.content.startsWith(`${prefix}skip`)) {
+      skipSong(msg);
+    } else if (msg.content.startsWith(`${prefix}stop`)) {
+      stopSong(msg);
     } else {
       msg.reply('Invalid command')
         .then(msg => msg.delete({ timeout: 10000 }))
@@ -203,7 +207,7 @@ const play = (msg) => {
     return msg.channel.send('You have to be in a voice chat.');
   }
 
-  if (!validUrl.isUri(link) ) {
+  if (!validUrl.isUri(link)) {
     return msg.channel.send('That aint be link.');
   }
 
@@ -230,5 +234,29 @@ const playSong = (connection, msg) => {
     } else {
       connection.disconnect();
     }
-  }) 
+  })
+}
+
+/* 
+const skipSong = (msg) => {
+  const server = servers[msg.guild.id];
+  if (server.dispatcher) server.dispatcher.end();
+  msg.channel.send('Song skipped!');
+}
+
+const stopSong = (msg) => {
+  const server = servers[msg.guild.id];
+  if (msg.guild.voiceConnection) {
+    for (let i = server.queque.length - 1; i >= 0; i--) {
+      server.queque.splice(i, 1);
+    }
+
+    server.dispatcher.end();
+    msg.channel.send('Queque ended.');
+    log("stopped queque");
+  }
+} */
+const stopSong = (msg) => {
+  let server = servers[msg.guild.id];
+  if (server.dispatcher) server.dispatcher.end();
 }
