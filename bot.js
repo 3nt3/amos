@@ -50,7 +50,12 @@ client.on('message', (msg) => {
       skipSong(msg);
     } else if (msg.content.startsWith(`${prefix}stop`)) {
       stopSong(msg);
-    } else {
+    } else if (msg.content.startsWith(`${prefix}help`)) {
+      help(msg);
+    } else if (msg.content.startsWith(`${prefix}code`)) {
+      code(msg);
+    }
+    else {
       msg.reply('Invalid command')
         .then(msg => msg.delete({ timeout: 10000 }))
         .catch(log(e('could not delete msg')));
@@ -259,4 +264,12 @@ const stopSong = (msg) => {
 const stopSong = (msg) => {
   let server = servers[msg.guild.id];
   if (server.dispatcher) server.dispatcher.end();
+}
+
+const help = (msg) => {
+  return msg.channel.send('Here are all commands: \n ```!kick @name```kicks a user from the server **requires permissions** \n```!ban @name```bans a user from the server **requires permissions** \n```!getLog```get the log file **admin only**\n```!clearLog```clears the log file **admin only**\n```!delete [amount]```deletes [amount] messages (min: 1; max: 100; messages being older than 2 weeks will not be deleted)\n```!play [url]``` plays a song in the voice chat **BETA** \n```!stop```stops the current song \n```!code```Link to the git-repository \n```!help```lists all commands');
+}
+
+const code = (msg) => {
+  return msg.channel.send('Here is the code: https://github.com/Sheesher/amos. Have fun w/ it.');
 }

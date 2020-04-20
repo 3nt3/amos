@@ -7,5 +7,12 @@
 
 * !delete [amount]: deletes [amount] messages (amount cannot be bigger than 100 and the message cannot be older than 2 weeks)
 
+* !play [url]: plays a song in voice chat (beta)
+* !stop: stops the current song
+
+* !help
+* !code
+
 # Other features
-*  
+* Blacklist; see blacklist.json
+* 
