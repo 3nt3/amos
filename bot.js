@@ -4,7 +4,8 @@ const dotenv = require('dotenv');
 const chalk = require('chalk');
 const fs = require('fs');
 const moment = require('moment');
-
+const ytdl = require('ytdl-core');
+const validUrl = require('valid-url');
 
 // Prefix and Bot ID
 const prefix = '!';
@@ -41,9 +42,12 @@ client.on('message', (msg) => {
     } else if (msg.content.startsWith(`${prefix}clearLog`)) {
       clearLog(msg);
     } else if (msg.content.startsWith(`${prefix}delete`)) {
-      delete(msg);
+      deleteMessages(msg, range = msg.content.slice(8, msg.content.length));
+    } // music
+    else if (msg.content.startsWith(`${prefix}play`)) {
+      play(msg);
     } else {
-      msg.reply('invalid command')
+      msg.reply('Invalid command')
         .then(msg => msg.delete({ timeout: 10000 }))
         .catch(log(e('could not delete msg')));
     }
@@ -51,6 +55,7 @@ client.on('message', (msg) => {
 });
 
 // Commands
+// BAN AND KICK
 const kickUser = (msg) => {
   let userToKick = msg.mentions.members.first();
   try {
@@ -108,6 +113,8 @@ const banUser = async (msg) => {
   }
 };
 
+
+// LOG SYSTEM
 const saveToLog = (msg) => {
   try {
     const path = `./logs/${msg.guild.id}.log`;
@@ -134,6 +141,32 @@ const getLog = (msg) => {
   }
 }
 
+const clearLog = (msg) => {
+  const fileToClear = `./logs/${msg.guild.id}.log`;
+  if (msg.member.hasPermission('ADMINISTRATOR')) {
+    fs.truncate(fileToClear, 0, () => log(s(`file ${msg.guild.id} cleared`)));
+    msg.channel.send('Server log cleard! :cross:');
+  } else {
+    return msg.channel.send('You do not have the permission to clear the log file! :sad:')
+  }
+}
+
+
+// DELETE MESSAGES
+const deleteMessages = async (msg) => {
+  const amount = msg.content.split(' ').slice(1).join(' ');
+  if (!amount) return msg.reply('Invalid range.');
+  if (isNaN(amount)) return msg.reply('You must provide a number.');
+  if (amount > 100) return msg.reply('Amount too high (max: 100).');
+  if (amount < 1) return msg.reply('Amount too small (min: 1).');
+
+  await msg.channel.messages.fetch({ limit: amount }).then(messages => {
+    msg.channel.bulkDelete(messages
+    ).then(msg.channel.send('Finished deleting'));
+  });
+}
+
+// BLACKLIST
 const convertJSONtoArray = (path) => {
   let json = require(path);
   let result = [];
@@ -156,19 +189,46 @@ const checkBlacklist = (msg) => {
   }
 }
 
-const clearLog = (msg) => {
-  const fileToClear = `./logs/${msg.guild.id}.log`;
-  if (msg.member.hasPermission('ADMINISTRATOR')) {
-    fs.truncate(fileToClear, 0, () => log(s(`file ${msg.guild.id} cleared`)));
-    msg.channel.send('Server log cleard! :cross:');
-  } else {
-    return msg.channel.send('You do not have the permission to clear the log file! :sad:')
+let servers = {};
+// MUSIC
+const play = (msg) => {
+  const args = msg.content.substring(1).split(" ");
+  const link = args[1];
+
+  if (!link) {
+    return msg.channel.send('You must provide a link.');
+  };
+
+  if (!msg.member.voice.channel) {
+    return msg.channel.send('You have to be in a voice chat.');
   }
+
+  if (!validUrl.isUri(link) ) {
+    return msg.channel.send('That aint be link.');
+  }
+
+  if (!servers[msg.guild.id]) servers[msg.guild.id] = {
+    queque: []
+  }
+
+  let server = servers[msg.guild.id];
+  server.queque.push(link);
+
+  if (!msg.guild.voiceConnection) msg.member.voice.channel.join().then((connection) => {
+    playSong(connection, msg);
+  })
 }
 
-const delete = async (msg, range) => {
-    msg.delete();
-    do {
-    const fetched = await msg.channel.fetchMessages({limit: range});
-    msg.channel.bulkDelete(fetched);
-} while(fetched.size >= 2) }
+const playSong = (connection, msg) => {
+  const server = servers[msg.guild.id];
+  log(server, servers, server.queque);
+  server.dispatcher = connection.play(ytdl(server.queque[0], { filter: "audioonly" }))
+  server.queque.shift();
+  server.dispatcher.on("end", () => {
+    if (server.queque[0]) {
+      playSong(connection, msg);
+    } else {
+      connection.disconnect();
+    }
+  }) 
+}

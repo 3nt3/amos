@@ -5,7 +5,7 @@
 * !getLog: get the log file *ADMIN ONLY*
 * !clearLog: clears the log file *ADMIN ONLY*
 
-* !delete [range]: 
+* !delete [amount]: deletes [amount] messages (amount cannot be bigger than 100 and the message cannot be older than 2 weeks)
 
 # Other features
-* 
+*  
