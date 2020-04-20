@@ -27,41 +27,54 @@ client.once('ready', () => log(s('Bot running')));
 client.login(process.env.TOKEN);
 
 client.on('message', (msg) => {
-  log(msg.content.toLowerCase());
   if (msg.author.bot) return;
   saveToLog(msg);
   checkBlacklist(msg);
 
-  if (msg.content.startsWith(`${prefix}`)) {
-    if (msg.content.startsWith(`${prefix}kick`)) {
+  let args = msg.content.substring(1).split(' ');
+  log(args);
+  switch (args[0]) {
+    // BAN & KICK
+    case 'kick':
       kickUser(msg);
-    } else if (msg.content.startsWith(`${prefix}ban`)) {
+      break;
+    case 'ban':
       banUser(msg);
-    } else if (msg.content.startsWith(`${prefix}getLog`)) {
+      break;
+    // LOG
+    case 'getLog':
       getLog(msg);
-    } else if (msg.content.startsWith(`${prefix}clearLog`)) {
+      break;
+    case 'clearLog':
       clearLog(msg);
-    } else if (msg.content.startsWith(`${prefix}delete`)) {
+      break;
+    // DELETE MESSAGES
+    case 'delete':
       deleteMessages(msg, range = msg.content.slice(8, msg.content.length));
-    } // music
-    else if (msg.content.startsWith(`${prefix}play`)) {
-      play(msg);
-    } else if (msg.content.startsWith(`${prefix}skip`)) {
-      skipSong(msg);
-    } else if (msg.content.startsWith(`${prefix}stop`)) {
-      stopSong(msg);
-    } else if (msg.content.startsWith(`${prefix}help`)) {
+      break;
+    // HELP & CODE
+    case 'help':
       help(msg);
-    } else if (msg.content.startsWith(`${prefix}code`)) {
+      break;
+    case 'code':
       code(msg);
-    }
-    else {
+      break;
+    // MUSIC
+    case 'play':
+      play(msg);
+      break;
+    case 'skip':
+      skip(msg);
+      break;
+    case 'stop':
+      stop(msg);
+      break;
+    default:
       msg.reply('Invalid command')
-        .then(msg => msg.delete({ timeout: 10000 }))
+        .then(msg => msg.delete({ timeout: 3000 }))
         .catch(log(e('could not delete msg')));
-    }
-  }
-});
+        break;
+  }});
 
 client.on('guildMemberAdd', member => {
   const channel = member.guild.channels.find(channel => channel.name === "neuankömmlinge");
