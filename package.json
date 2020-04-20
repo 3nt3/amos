@@ -20,6 +20,7 @@
     "node-opus": "^0.3.3",
     "opusscript": "0.0.7",
     "valid-url": "^1.0.9",
+    "youtube-mp3-downloader": "^0.6.7",
     "ytdl-core": "^2.1.0",
     "zlib": "^1.0.5"
   },

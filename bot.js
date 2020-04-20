@@ -6,6 +6,8 @@ const fs = require('fs');
 const moment = require('moment');
 const ytdl = require('ytdl-core');
 const validUrl = require('valid-url');
+const ytMp3Down = require('youtube-mp3-downloader');
+
 
 // Prefix and Bot ID
 const prefix = '!';
@@ -73,8 +75,9 @@ client.on('message', (msg) => {
       msg.reply('Invalid command')
         .then(msg => msg.delete({ timeout: 3000 }))
         .catch(log(e('could not delete msg')));
-        break;
-  }});
+      break;
+  }
+});
 
 client.on('guildMemberAdd', member => {
   const channel = member.guild.channels.find(channel => channel.name === "neuankömmlinge");
@@ -220,8 +223,21 @@ const checkBlacklist = (msg) => {
   }
 }
 
-let servers = {};
+// HELP & CODE
+const help = (msg) => {
+  fs.readFile('help.txt', 'utf8', (err, data) => {
+    if (err) throw err;
+    msg.channel.send(data);
+  })
+}
+
+const code = (msg) => {
+  return msg.channel.send('Here is the code: https://github.com/Sheesher/amos. Have fun w/ it.');
+}
+
 // MUSIC
+let servers = {};
+
 const play = (msg) => {
   const args = msg.content.substring(1).split(" ");
   const link = args[1];
@@ -242,6 +258,8 @@ const play = (msg) => {
     queque: []
   }
 
+  // downloadMp3(link);
+
   let server = servers[msg.guild.id];
   server.queque.push(link);
 
@@ -250,21 +268,6 @@ const play = (msg) => {
   })
 }
 
-const playSong = (connection, msg) => {
-  const server = servers[msg.guild.id];
-  log(server, servers, server.queque);
-  server.dispatcher = connection.play(ytdl(server.queque[0], { filter: "audioonly" }))
-  server.queque.shift();
-  server.dispatcher.on("end", () => {
-    if (server.queque[0]) {
-      playSong(connection, msg);
-    } else {
-      connection.disconnect();
-    }
-  })
-}
-
-/* 
 const skipSong = (msg) => {
   const server = servers[msg.guild.id];
   if (server.dispatcher) server.dispatcher.end();
@@ -282,19 +285,48 @@ const stopSong = (msg) => {
     msg.channel.send('Queque ended.');
     log("stopped queque");
   }
-} */
-const stopSong = (msg) => {
-  let server = servers[msg.guild.id];
-  if (server.dispatcher) server.dispatcher.end();
 }
 
-const help = (msg) => {
-  fs.readFile('help.txt', 'utf8', (err, data) => {
-    if (err) throw err;
-    msg.channel.send(data);
+const playSong = (connection, msg) => {
+  const server = servers[msg.guild.id];
+  server.dispatcher = connection.play(ytdl(server.queque[0], { filter: "audioonly" }))
+  server.queque.shift();
+  server.dispatcher.on("end", () => {
+    if (server.queque[0]) {
+      playSong(connection, msg);
+    } else {
+      connection.disconnect();
+    }
   })
 }
 
-const code = (msg) => {
-  return msg.channel.send('Here is the code: https://github.com/Sheesher/amos. Have fun w/ it.');
+const downloadMp3 = (url) => {
+  let YD = new ytMp3Down({
+    "ffmpegPath": "C:\\ffmpeg\\bin",
+    "outputPath": `./music/`,
+    "youtubeVideoQuality": "highest",
+    "queueParallelism": "2",
+    "progressTimeout": "100"
+  })
+
+  YD.download(url);
+
+  YD.on("finished", (err, data) => {
+    log(JSON.stringify(data));
+  })
+
+  YD.on("error", (error) => log(e(error)));
+
+  YD.on("progress", (progress) => log(JSON.stringify(progress)));
+
+}
+
+const genString = (length) => {
+  let result = '';
+  let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let charactersLength = characters.length;
+  for (let i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() ** charactersLength));
+  }
+  return result;
 }
