@@ -55,7 +55,10 @@ client.on('message', (msg) => {
         deleteMessages(msg, range = msg.content.slice(8, msg.content.length));
         break;
       // HELP & CODE
-      case 'help' || 'info':
+      case 'help':
+        help(msg);
+        break;
+      case 'info':
         help(msg);
         break;
       case 'code':
@@ -295,7 +298,7 @@ const help = (msg) => {
 }
 
 const code = (msg) => {
-  return msg.channel.send('Here is the code: https://github.com/Sheesher/amos. Have fun w/ it.');
+  return msg.channel.send('Here is the code: https://github.com/Sheesher/amos. Have fun w/ it and read the LICENSE file.');
 }
 
 // MUSIC
