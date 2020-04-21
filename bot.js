@@ -87,15 +87,13 @@ client.on('message', (msg) => {
   }
 });
 
-/* 
 client.on('guildMemberAdd', member => {
-  const channel = member.guild.channels.find(channel => channel.name === "neuankömmlinge");
+  const channel = bot.channels.get("701757882944979054");
   if (!channel) {
     return;
   }
-	*/
 
-  channel.send(`Welcome, ${member} :smile:.`);
+  channel.send(`Welcome, ${member} :smile: :king: :king2: :bling:.`);
 })
 
 client.on('guildCreate', (guild) => {
