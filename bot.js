@@ -72,7 +72,7 @@ client.on('message', (msg) => {
         skip(msg);
         break;
       case 'stop':
-        stop(msg);
+        stopSong(msg);
         break;
       // POLL
       case 'poll':
@@ -249,11 +249,11 @@ const checkBlacklist = (msg) => {
 const help = (msg) => {
 
   const Embed = new Discord.MessageEmbed()
-    .setColor('#0099ff')
+    .setColor('#3498db')
     .setTitle('Amos')
     .setURL('https://github.com/Sheesher/amos')
     .setDescription('List of commands:')
-    .setImage(client.user.avatarURL())
+    .setThumbnail(client.user.avatarURL())
     .setFooter('© Sheesher')
     .addFields(
       {
@@ -346,6 +346,12 @@ const playSong = async (connection, url, msg) => {
   server.dispatcher.on('finish', () => log(s('playing finished')))
 }
 
+const stopSong = (msg) => {
+  const server = servers[msg.guild.id];
+  if (server.dispatcher) {
+    server.dispatcher.end();
+  }
+}
 
 /* 
 const skipSong = (msg) => {
