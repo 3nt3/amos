@@ -4,9 +4,8 @@ const dotenv = require('dotenv');
 const chalk = require('chalk');
 const fs = require('fs');
 const moment = require('moment');
-const ytdl = require('ytdl-core');
+const ytdl = require('ytdl-core-discord');
 const validUrl = require('valid-url');
-const ytMp3Down = require('youtube-mp3-downloader');
 
 
 // Prefix and Bot ID
@@ -32,50 +31,56 @@ client.on('message', (msg) => {
   if (msg.author.bot) return;
   saveToLog(msg);
   checkBlacklist(msg);
-
-  let args = msg.content.substring(1).split(' ');
-  log(args);
-  switch (args[0]) {
-    // BAN & KICK
-    case 'kick':
-      kickUser(msg);
-      break;
-    case 'ban':
-      banUser(msg);
-      break;
-    // LOG
-    case 'getLog':
-      getLog(msg);
-      break;
-    case 'clearLog':
-      clearLog(msg);
-      break;
-    // DELETE MESSAGES
-    case 'delete':
-      deleteMessages(msg, range = msg.content.slice(8, msg.content.length));
-      break;
-    // HELP & CODE
-    case 'help':
-      help(msg);
-      break;
-    case 'code':
-      code(msg);
-      break;
-    // MUSIC
-    case 'play':
-      play(msg);
-      break;
-    case 'skip':
-      skip(msg);
-      break;
-    case 'stop':
-      stop(msg);
-      break;
-    default:
-      msg.reply('Invalid command')
-        .then(msg => msg.delete({ timeout: 3000 }))
-        .catch(log(e('could not delete msg')));
-      break;
+  log(msg);
+  if (msg.content[0] == "!") {
+    let args = msg.content.substring(1).split(' ');
+    log(args);
+    switch (args[0]) {
+      // BAN & KICK
+      case 'kick':
+        kickUser(msg);
+        break;
+      case 'ban':
+        banUser(msg);
+        break;
+      // LOG
+      case 'getLog':
+        getLog(msg);
+        break;
+      case 'clearLog':
+        clearLog(msg);
+        break;
+      // DELETE MESSAGES
+      case 'delete':
+        deleteMessages(msg, range = msg.content.slice(8, msg.content.length));
+        break;
+      // HELP & CODE
+      case 'help' || 'info':
+        help(msg);
+        break;
+      case 'code':
+        code(msg);
+        break;
+      // MUSIC
+      case 'play':
+        play(msg);
+        break;
+      case 'skip':
+        skip(msg);
+        break;
+      case 'stop':
+        stop(msg);
+        break;
+      // POLL
+      case 'poll':
+        poll(msg, args);
+        break;
+      default:
+        msg.reply('Invalid command')
+          .then(msg => msg.delete({ timeout: 3000 }))
+          .catch(log(e('could not delete msg')));
+        break;
+    }
   }
 });
 
@@ -86,6 +91,20 @@ client.on('guildMemberAdd', member => {
   }
 
   channel.send(`Welcome, ${member} :smile:.`);
+})
+
+client.on('guildCreate', (guild) => {
+
+  let defaultChannel = "";
+  guild.channels.cache.forEach((channel) => {
+    if (channel.type === "text" && defaultChannel === "") {
+      if (channel.permissionsFor(guild.me).has("SEND_MESSAGES")) {
+        defaultChannel = channel;
+      }
+    }
+  })
+  defaultChannel.send('moin');
+
 })
 
 // Commands
@@ -225,10 +244,54 @@ const checkBlacklist = (msg) => {
 
 // HELP & CODE
 const help = (msg) => {
-  fs.readFile('help.txt', 'utf8', (err, data) => {
-    if (err) throw err;
-    msg.channel.send(data);
-  })
+
+  const Embed = new Discord.MessageEmbed()
+    .setColor('#0099ff')
+    .setTitle('Amos')
+    .setURL('https://github.com/Sheesher/amos')
+    .setDescription('List of commands:')
+    .setImage(client.user.avatarURL())
+    .setFooter('© Sheesher')
+    .addFields(
+      {
+        name: '```!kick @name```',
+        value: 'kicks a member from the guild \n ***permissions required***',
+      },
+      {
+        name: '```!ban @name```',
+        value: 'bans a member from the guild \n ***permissions requierd***'
+      },
+      {
+        name: '```!getLog```',
+        value: 'get the log file \n ***admin only***'
+      },
+      {
+        name: '```!clearLog```',
+        value: 'clears the log file \n ***admin only***'
+      },
+      {
+        name: '```!delete [amount]```',
+        value: 'deletes [amount] messages'
+      },
+      {
+        name: '```!play [url]```',
+        value: 'plays a song in the voice chat'
+      },
+      {
+        name: '```!stop```',
+        value: 'stops playing the song'
+      },
+      {
+        name: '```!code```',
+        value: 'returns the link to the git-repository'
+      },
+      {
+        name: '```!help``` or ```!info```',
+        value: 'returns this object'
+      }
+    );
+
+  msg.channel.send(Embed);
 }
 
 const code = (msg) => {
@@ -258,16 +321,30 @@ const play = (msg) => {
     queque: []
   }
 
-  // downloadMp3(link);
-
   let server = servers[msg.guild.id];
   server.queque.push(link);
 
   if (!msg.guild.voiceConnection) msg.member.voice.channel.join().then((connection) => {
-    playSong(connection, msg);
+    playSong(connection, link, msg);
   })
 }
 
+const playSong = async (connection, url, msg) => {
+  const server = servers[msg.guild.id];
+  server.dispatcher = connection.play(await ytdl(url), { type: 'opus' });
+  server.queque.shift();
+  server.dispatcher.on("end", () => {
+    if (server.queque[0]) {
+      playSong(connection, url);
+    } else {
+      connection.disconnect();
+    }
+  })
+  server.dispatcher.on('finish', () => log(s('playing finished')))
+}
+
+
+/* 
 const skipSong = (msg) => {
   const server = servers[msg.guild.id];
   if (server.dispatcher) server.dispatcher.end();
@@ -285,41 +362,7 @@ const stopSong = (msg) => {
     msg.channel.send('Queque ended.');
     log("stopped queque");
   }
-}
-
-const playSong = (connection, msg) => {
-  const server = servers[msg.guild.id];
-  server.dispatcher = connection.play(ytdl(server.queque[0], { filter: "audioonly" }))
-  server.queque.shift();
-  server.dispatcher.on("end", () => {
-    if (server.queque[0]) {
-      playSong(connection, msg);
-    } else {
-      connection.disconnect();
-    }
-  })
-}
-
-const downloadMp3 = (url) => {
-  let YD = new ytMp3Down({
-    "ffmpegPath": "C:\\ffmpeg\\bin",
-    "outputPath": `./music/`,
-    "youtubeVideoQuality": "highest",
-    "queueParallelism": "2",
-    "progressTimeout": "100"
-  })
-
-  YD.download(url);
-
-  YD.on("finished", (err, data) => {
-    log(JSON.stringify(data));
-  })
-
-  YD.on("error", (error) => log(e(error)));
-
-  YD.on("progress", (progress) => log(JSON.stringify(progress)));
-
-}
+} 
 
 const genString = (length) => {
   let result = '';
@@ -330,3 +373,21 @@ const genString = (length) => {
   }
   return result;
 }
+
+*/
+
+const poll = (msg, args) => {
+  const pollText = args.slice(1).join(' ');
+
+  if (!pollText) {
+    return msg.channel.send("Embed");
+  }
+
+  msg.delete();
+  msg.channel.send(pollText).then((reaction) => {
+    reaction.react('👍');
+    reaction.react('👎');
+  })
+}
+
+// client.on('messageUpdate')
